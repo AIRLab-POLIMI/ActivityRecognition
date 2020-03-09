@@ -1,0 +1,23 @@
+{
+  "store_model": true,
+  "cvat_dumps_path": "video_tag/cvat_annotations",
+  "model_output": "training_sessions/mirr_no_bal/mirr_6redux_norm/model",
+  "minorities": 1,
+  "mirror_few_samples": true,
+  "normalise_poses": true,
+  "har_dataset_path": "activity_recognition/data",
+  "video_path": "video_tag/video",
+  "epochs": 400,
+  "tags_path": "video_tag/cvat_annotations_sorted",
+  "balance_samples": false,
+  "reductions": {
+    "walking_fast": "walking",
+    "window_shopping": "standing",
+    "wandering": "walking",
+    "walking_phone": "walking",
+    "standing_free": "standing",
+    "walking_caddy": "walking",
+    "standing_busy": "standing_phone_talking",
+    "walking_slow": "walking"
+  }
+}

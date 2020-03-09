@@ -1,0 +1,8 @@
+True,sitting,sitting_phone_talking,standing,standing_phone_talking,walking,walking_phone_talking,All
+sitting,31,1,1,0,0,0,33
+sitting_phone_talking,0,48,0,0,0,0,48
+standing,0,0,36,4,6,4,50
+standing_phone_talking,0,0,3,48,2,2,55
+walking,0,0,7,3,24,8,42
+walking_phone_talking,0,0,0,0,5,24,29
+All,31,49,47,55,37,38,257

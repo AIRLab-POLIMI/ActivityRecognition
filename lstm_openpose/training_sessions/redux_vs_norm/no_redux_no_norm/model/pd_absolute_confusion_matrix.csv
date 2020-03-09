@@ -1,0 +1,13 @@
+True,sitting,sitting_phone_talking,standing_free,standing_phone_talking,walking_cart,walking_fast,walking_phone,walking_phone_talking,walking_slow,wandering,window_shopping,All
+sitting,1711,2,15,0,0,0,1,1,9,0,0,1739
+sitting_phone_talking,6,13,1,0,1,0,0,0,1,0,0,22
+standing_free,5,1,1481,11,22,16,9,2,63,6,1,1617
+standing_phone_talking,0,0,14,40,0,2,0,1,4,0,0,61
+walking_cart,3,1,12,0,121,14,0,10,60,7,0,228
+walking_fast,5,0,16,1,17,244,8,8,199,6,0,504
+walking_phone,1,0,7,0,6,12,63,8,21,1,0,119
+walking_phone_talking,0,0,3,3,7,27,4,34,42,0,0,120
+walking_slow,7,0,59,2,43,111,11,11,1274,19,0,1537
+wandering,0,0,18,2,6,10,2,2,30,148,1,219
+window_shopping,0,0,0,0,0,0,0,0,0,1,26,27
+All,1738,17,1626,59,223,436,98,77,1703,188,28,6193

@@ -6,7 +6,8 @@
 - [Intel OpenVINO Toolkit](https://software.intel.com/en-us/openvino-toolkit)
   - Installation instructions [here](https://docs.openvinotoolkit.org/latest/_docs_install_guides_installing_openvino_linux.html#configure-model-optimizer)
 - CMake
-- python >= 3.5, <3.6
+- [SWIG](http://www.swig.org)
+- python >= 3.5
 - matplotlib
 - numpy
 - pandas
@@ -16,7 +17,7 @@
 
 ```sh
 conda create env -n cat_har
-conda install -n cat_har "python>=3.5,<3.6" 
+conda install -n cat_har "python>=3.5" 
 conda install -c anaconda -n cat_har numpy pandas
 conda install -c conda-forge -n cat_har matplotlib tensorflow
 conda activate cat_har
@@ -56,15 +57,22 @@ This phase can be configured with a JSON file under 'conf/' and launched with th
 ```
 python training.py train -h
 
-usage: training.py train [-h] [-conf CONFIG_PATH] [-files [FILES [FILES ...]]]
-                         [-sessiononly]
+usage: training.py [-h] {stat,pre-process,train,multiple-training} ...
+
+HPE-to-HAR for robots - RNN training utility
+
+positional arguments:
+  {stat,pre-process,train,multiple-training}
+                        Commands to pre-process or train the RNN
+    stat                Plot statistics about the pre-processed data set.
+    pre-process         Pre-process data: prepare CVAT dumps and then extract
+                        poses using OpenPose-based HPE module.
+    train               Train the RNN using pre-processed data.
+    multiple-training   Launch multiple training sessions of the HAR RNNusing
+                        different configurations.
 
 optional arguments:
   -h, --help            show this help message and exit
-  -conf CONFIG_PATH     Path to configuration file for training.
-  -files [FILES [FILES ...]]
-                        List of file names (in CVAT dumps path) to train.
-  -sessiononly          DEBUG OPT: do not train, setup the TF session only
 ```
 
 ### Run real-time HAR on camera using OpenVINO HPE

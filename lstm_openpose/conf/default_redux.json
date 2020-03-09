@@ -1,0 +1,11 @@
+{
+  "reductions": {
+    "walking_slow":          "walking",
+    "walking_fast":          "walking",
+    "walking_caddy":         "walking",
+    "wandering":             "walking",
+    "standing_free":         "standing",
+    "standing_busy":         "standing_phone_talking",
+    "window_shopping":       "standing"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "epochs": 400,
+  "normalise_poses": true,
+  "reductions": {
+    "standing_busy": "standing_phone_talking",
+    "walking_caddy": "walking_cart"
+  },
+  "store_model": true,
+  "model_output": "training_sessions/mirr_on_no_red/2_mirr_no_redux_norm/model",
+  "har_dataset_path": "activity_recognition/data",
+  "balance_samples": false,
+  "mirror_few_samples": true,
+  "minorities": 2,
+
+  "video_path": "video_tag/video",
+  "cvat_dumps_path": "video_tag/cvat_annotations",
+  "tags_path": "video_tag/cvat_annotations_sorted"
+}

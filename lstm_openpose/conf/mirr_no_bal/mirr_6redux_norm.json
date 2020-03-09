@@ -1,0 +1,23 @@
+{
+  "epochs": 400,
+  "normalise_poses": true,
+  "reductions": {
+    "walking_slow":          "walking",
+    "walking_fast":          "walking",
+    "walking_caddy":         "walking",
+    "walking_phone":         "walking",
+    "wandering":             "walking",
+    "standing_free":         "standing",
+    "standing_busy":         "standing_phone_talking",
+    "window_shopping":       "standing"
+  },
+  "store_model": true,
+  "model_output": "training_sessions/mirr_no_bal/mirr_6redux_norm/model",
+  "har_dataset_path": "activity_recognition/data",
+  "balance_samples": false,
+  "mirror_few_samples": true,
+
+  "video_path": "video_tag/video",
+  "cvat_dumps_path": "video_tag/cvat_annotations",
+  "tags_path": "video_tag/cvat_annotations_sorted"
+}

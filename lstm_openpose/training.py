@@ -202,7 +202,14 @@ def extract_classes(annotation_file_path):
     classes = []
     for class_el in class_els:
         if "together" not in class_el.text:
-            classes.append(class_el.text)
+            rename = class_el.text
+            if class_el.text == 'walking_caddy':
+                rename = 'walking_cart'
+            elif class_el.text == 'standing_busy':
+                rename = 'standing_phone_talking'
+            elif class_el.text == 'standing_free':
+                rename = 'standing'
+            classes.append(rename)
 
     return classes
 
@@ -591,18 +598,26 @@ def compute_new_class_map(class_map, reductions):
     new_class_id = 0
     new_class_map = {}
     id_transl = {}
+
     # First assign an ID to the reduced classes
-    for red in reductions.keys():
+    sort_red_keys = [k for k, v in sorted(reductions.items(), key=lambda item: item[1])]
+    for red in sort_red_keys:
         if reductions[red] not in new_class_map:
             new_class_map[reductions[red]] = new_class_id
             new_class_id += 1
-        id_transl[float(class_map[red])] = float(new_class_map[reductions[red]])
+        id_transl[class_map[red]] = new_class_map[reductions[red]]
+
     # Then all the others
-    for cl in class_map.keys():
-        if cl not in reductions.keys():
+    class_map_keys = list(class_map.keys())
+    class_map_keys.sort()
+    for cl in class_map_keys:
+        if cl not in sort_red_keys:
             new_class_map[cl] = new_class_id
-            id_transl[float(class_map[cl])] = float(new_class_id)
+            id_transl[class_map[cl]] = new_class_id
             new_class_id += 1
+
+    all_keys = [k for k in class_map.keys() if k not in sort_red_keys]
+    all_keys.extend(sort_red_keys)
 
     return new_class_map, id_transl
 
@@ -692,7 +707,9 @@ def extract_labels_for_training(class_map):
         rev_map[class_map[label]] = label
         # print('(Class, ID): (' + str(label) + ', ' + str(class_map[label]) + ')')
 
+    # Watch it! Keys must be ordered by key (value which will be hot encoded)
     ids = list(rev_map.keys())
+    ids.sort()
     labels = [rev_map[l] for l in ids]
     return labels, rev_map
 
@@ -779,9 +796,9 @@ def initialise_variables(class_map_from_tags=False, files_selection=[],
         class_map = extract_class_map(metadata[0].cvat_dump)
     else:
         class_map = load_class_map(file_path=class_map_file)
-        if reductions:  # Implies != from None and != from {}
-            old_class_map = class_map
-            class_map, id_transl = compute_new_class_map(class_map, reductions)
+        # Recompute class map to perform ordering wrt to labels
+        old_class_map = class_map
+        class_map, id_transl = compute_new_class_map(class_map, reductions)
 
     labels, id_to_class_map = extract_labels_for_training(class_map)
     return metadata, labels, class_map, old_class_map, id_transl, id_to_class_map
@@ -902,7 +919,6 @@ def train_rnn(args):
     print("class_map: ", json.dumps(class_map, indent=2, sort_keys=True))
     print("id_to_class_map: ", json.dumps(id_to_class_map, indent=2, sort_keys=True))
     print("labels: ", labels)
-    print("id_transl: ", id_transl)
 
     n_input = n_joints * 2  # Len of OpenPose skeleton array [x_0, y_0, ..., x_17, y_17]
     # -----------------------------------------------------
@@ -942,26 +958,24 @@ def train_rnn(args):
         y_labels_data = reduce_classes(y_labels_data, id_transl)
         print("old_class_map: ", old_class_map)
         print("id_transl: ", id_transl)
-        print("class_map: ", class_map)
         print("--------------------------------------")
 
-    # print("y_test AFTER reduction: ", y_labels_data)
+    uniq_levels = np.unique(y_labels_data)
+    traces_per_label_id = {level: sum(y_labels_data == level) for level in uniq_levels}
+    min_sample_size = min(traces_per_label_id.values())
+    uniq_counts = {str(id_to_class_map[label_id]): str(traces_per_label_id[label_id])
+                   for label_id in traces_per_label_id}
+
+    print("BEFORE mirroring or balancing the dataset")
+    print("--------------------------------------")
+    print("Shape of x_data: ", x_slides_data.shape)
+    print("Shape of y_data: ", y_labels_data.shape)
+    print("uniq_levels: ", uniq_levels)
+    print("uniq_counts: ", json.dumps(uniq_counts, indent=2, sort_keys=True))
+    print("min_sample_size: ", min_sample_size)
+    print("--------------------------------------")
+
     if config['mirror_few_samples']:
-        uniq_levels = np.unique(y_labels_data)
-        traces_per_label_id = {level: sum(y_labels_data == level) for level in uniq_levels}
-        min_sample_size = min(traces_per_label_id.values())
-        uniq_counts = {str(id_to_class_map[label_id]): str(traces_per_label_id[label_id])
-                       for label_id in traces_per_label_id}
-
-        print("BEFORE mirroring the dataset")
-        print("--------------------------------------")
-        print("Shape of x_data: ", x_slides_data.shape)
-        print("Shape of y_data: ", y_labels_data.shape)
-        print("uniq_levels: ", uniq_levels)
-        print("uniq_counts: ", json.dumps(uniq_counts, indent=2, sort_keys=True))
-        print("min_sample_size: ", min_sample_size)
-        print("--------------------------------------")
-
         x_slides_data, y_labels_data = mirror_bottlenecks_traces(x_slides_data, y_labels_data)
 
         uniq_levels = np.unique(y_labels_data)
@@ -980,14 +994,16 @@ def train_rnn(args):
         print("--------------------------------------")
 
     if config['balance_samples']:
+        x_slides_data, y_labels_data = balanced_sample_maker(x_slides_data, y_labels_data, uniq_levels,
+                                                             min_sample_size, 33)
+
         uniq_levels = np.unique(y_labels_data)
         traces_per_label_id = {level: sum(y_labels_data == level) for level in uniq_levels}
         min_sample_size = min(traces_per_label_id.values())
-
         uniq_counts = {str(id_to_class_map[label_id]): str(traces_per_label_id[label_id])
                        for label_id in traces_per_label_id}
 
-        print("BEFORE balancing the dataset")
+        print("AFTER balancing the dataset")
         print("--------------------------------------")
         print("Shape of x_data: ", x_slides_data.shape)
         print("Shape of y_data: ", y_labels_data.shape)
@@ -995,16 +1011,6 @@ def train_rnn(args):
         print("uniq_counts: ", json.dumps(uniq_counts, indent=2, sort_keys=True))
         print("min_sample_size: ", min_sample_size)
         print("--------------------------------------")
-
-        x_slides_data, y_labels_data = balanced_sample_maker(x_slides_data, y_labels_data, uniq_levels,
-                                                             min_sample_size, 33)
-
-        print("AFTER balancing the dataset")
-        print("--------------------------------------")
-
-    print("Shape of x_data: ", x_slides_data.shape)
-    print("Shape of y_data: ", y_labels_data.shape)
-    print("--------------------------------------")
 
     X_train, X_test, y_train, y_test = train_test_split(x_slides_data, y_labels_data, train_size=0.8, random_state=33)
 
@@ -1419,9 +1425,12 @@ def plot(batch_size, train_losses, train_accuracies, test_losses, test_accuracie
     font = {
         'family': 'Bitstream Vera Sans',
         'weight': 'bold',
-        'size': 18
+        'size': 25
     }
     matplotlib.rc('font', **font)
+
+    # Decimal precision of confusion matrices
+    float_format = "{x:.0f}"
 
     # -------------------------- START ACCURACY OVER ITERATIONS ----------------------------
 
@@ -1472,7 +1481,7 @@ def plot(batch_size, train_losses, train_accuracies, test_losses, test_accuracie
     im, cbar = heatmap(normalised_confusion_matrix, labels, labels,
                        ax=ax, cmap=plt.cm.rainbow, cbarlabel="Predictions over total [%]")
 
-    texts = annotate_heatmap(im, valfmt="{x:.1f}")
+    texts = annotate_heatmap(im, valfmt=float_format)
 
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
@@ -1495,11 +1504,11 @@ def plot(batch_size, train_losses, train_accuracies, test_losses, test_accuracie
     im, cbar = heatmap(norm_on_row_cm, labels, labels,
                        ax=ax, cmap=plt.cm.rainbow, cbarlabel="Samples of true labels [%]")
 
-    texts = annotate_heatmap(im, valfmt="{x:.1f}")
+    texts = annotate_heatmap(im, valfmt=float_format)
 
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
-    ax.set_title("Confusion matrix \n(Normalised over number of samples per class (row))")
+    ax.set_title("Confusion matrix \n(Normalised over samples per class)")
     im.set_clim(0, 100)
     conf_fig.tight_layout()
 
@@ -1518,11 +1527,11 @@ def plot(batch_size, train_losses, train_accuracies, test_losses, test_accuracie
     im, cbar = heatmap(norm_on_col_cm, labels, labels,
                        ax=ax, cmap=plt.cm.rainbow, cbarlabel="Samples of predicted labels [%]")
 
-    texts = annotate_heatmap(im, valfmt="{x:.1f}")
+    texts = annotate_heatmap(im, valfmt=float_format)
 
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
-    ax.set_title("Confusion matrix \n(Normalised over number of predictions per class (col))")
+    ax.set_title("Confusion matrix \n(Normalised over predictions per class)")
     im.set_clim(0, 100)
     conf_fig.tight_layout()
 
@@ -1860,15 +1869,31 @@ def load_data(metadata, normalise_poses, reductions, class_map, old_class_map, i
         print("class_map: ", class_map)
         print("--------------------------------------")
 
-    if config['balance_samples']:
+    uniq_levels = np.unique(y_labels_data)
+    traces_per_label_id = {level: sum(y_labels_data == level) for level in uniq_levels}
+    min_sample_size = min(traces_per_label_id.values())
+    uniq_counts = {str(id_to_class_map[label_id]): str(traces_per_label_id[label_id])
+                   for label_id in traces_per_label_id}
+
+    print("BEFORE mirroring or balancing the dataset")
+    print("--------------------------------------")
+    print("Shape of x_data: ", x_slides_data.shape)
+    print("Shape of y_data: ", y_labels_data.shape)
+    print("uniq_levels: ", uniq_levels)
+    print("uniq_counts: ", json.dumps(uniq_counts, indent=2, sort_keys=True))
+    print("min_sample_size: ", min_sample_size)
+    print("--------------------------------------")
+
+    if config['mirror_few_samples']:
+        x_slides_data, y_labels_data = mirror_bottlenecks_traces(x_slides_data, y_labels_data)
+
         uniq_levels = np.unique(y_labels_data)
         traces_per_label_id = {level: sum(y_labels_data == level) for level in uniq_levels}
         min_sample_size = min(traces_per_label_id.values())
-
         uniq_counts = {str(id_to_class_map[label_id]): str(traces_per_label_id[label_id])
                        for label_id in traces_per_label_id}
 
-        print("BEFORE balancing the dataset")
+        print("AFTER mirroring the dataset")
         print("--------------------------------------")
         print("Shape of x_data: ", x_slides_data.shape)
         print("Shape of y_data: ", y_labels_data.shape)
@@ -1877,34 +1902,24 @@ def load_data(metadata, normalise_poses, reductions, class_map, old_class_map, i
         print("min_sample_size: ", min_sample_size)
         print("--------------------------------------")
 
-        if config['mirror_few_samples']:
-            for n in range(0, config['minorities']):
-                x_slides_data, y_labels_data = mirror_bottlenecks_traces(x_slides_data, y_labels_data)
-
-                uniq_levels = np.unique(y_labels_data)
-                traces_per_label_id = {level: sum(y_labels_data == level) for level in uniq_levels}
-                min_sample_size = min(traces_per_label_id.values())
-                uniq_counts = {str(id_to_class_map[label_id]): str(traces_per_label_id[label_id])
-                               for label_id in traces_per_label_id}
-
-                print("AFTER mirroring the dataset")
-                print("--------------------------------------")
-                print("Shape of x_data: ", x_slides_data.shape)
-                print("Shape of y_data: ", y_labels_data.shape)
-                print("uniq_levels: ", uniq_levels)
-                print("uniq_counts: ", json.dumps(uniq_counts, indent=2, sort_keys=True))
-                print("min_sample_size: ", min_sample_size)
-                print("--------------------------------------")
-
+    if config['balance_samples']:
         x_slides_data, y_labels_data = balanced_sample_maker(x_slides_data, y_labels_data, uniq_levels,
                                                              min_sample_size, 33)
 
+        uniq_levels = np.unique(y_labels_data)
+        traces_per_label_id = {level: sum(y_labels_data == level) for level in uniq_levels}
+        min_sample_size = min(traces_per_label_id.values())
+        uniq_counts = {str(id_to_class_map[label_id]): str(traces_per_label_id[label_id])
+                       for label_id in traces_per_label_id}
+
         print("AFTER balancing the dataset")
         print("--------------------------------------")
-
-    print("Shape of x_data: ", x_slides_data.shape)
-    print("Shape of y_data: ", y_labels_data.shape)
-    print("--------------------------------------")
+        print("Shape of x_data: ", x_slides_data.shape)
+        print("Shape of y_data: ", y_labels_data.shape)
+        print("uniq_levels: ", uniq_levels)
+        print("uniq_counts: ", json.dumps(uniq_counts, indent=2, sort_keys=True))
+        print("min_sample_size: ", min_sample_size)
+        print("--------------------------------------")
 
     return x_slides_data, y_labels_data
 

@@ -1,8 +1,8 @@
 True,sitting,sitting_phone_talking,standing,standing_phone_talking,walking,walking_phone_talking,All
-sitting,29,1,0,0,1,2,33
-sitting_phone_talking,2,46,0,0,0,0,48
-standing,1,1,35,3,6,4,50
-standing_phone_talking,1,0,3,44,5,2,55
-walking,4,1,5,2,22,8,42
-walking_phone_talking,0,0,1,1,4,23,29
-All,37,49,44,50,38,39,257
+sitting,31,3,3,0,2,0,39
+sitting_phone_talking,0,43,0,0,2,0,45
+standing,0,0,23,7,8,2,40
+standing_phone_talking,0,0,4,36,4,7,51
+walking,1,0,4,0,18,15,38
+walking_phone_talking,1,2,4,6,11,20,44
+All,33,48,38,49,45,44,257

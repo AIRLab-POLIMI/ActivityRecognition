@@ -220,8 +220,8 @@ def run_on_camera(chpe_proxy, rnn_weights_path, stat_path):
                         track_id = next_id
                         next_id += 1
 
-                    # Append keypoints to the time series of keypoints
-                    update_tracks_dict(tracks_dict, track_id, keypoints)
+                # Append keypoints to the time series of keypoints
+                update_tracks_dict(tracks_dict, track_id, keypoints)
 
                 # update current frame bbox
                 bbox_det_dict = {
@@ -266,7 +266,7 @@ def run_on_camera(chpe_proxy, rnn_weights_path, stat_path):
                 # Get the action predicted
                 har_start_time = time.time()
                 [arg_max_float], pred = sess.run([arg_max_tensor, pred_tensor], feed_dict={x: x_live})
-                har_time = (time.time() - har_start_time)
+                har_time += (time.time() - har_start_time)
                 class_index = int(arg_max_float)
 
                 # Get bbox of the person on which we performed the activity prediction:
@@ -281,9 +281,10 @@ def run_on_camera(chpe_proxy, rnn_weights_path, stat_path):
             # Append current detections to buffer
             bbox_dets_list_q.append(bbox_dets_list)
 
-            # Updating stats, for each frame: [Detections, HPE Time, N. Full Traces, HAR Time, End-to-end Time]
+            # Updating stats, for each frame:
+            # [Detections, HPE Time, Tracking Time, HAR Time, N. Full Traces, End-to-end Time]
             end_to_end_time = time.time() - end_to_end_start_time
-            statistics.append([num_dets, hpe_time, len(full_traces), tracking_time, har_time, end_to_end_time])
+            statistics.append([num_dets, hpe_time, tracking_time, har_time, len(full_traces), end_to_end_time])
 
             img_id += 1
             stop = chpe_proxy.render_poses()
@@ -511,7 +512,7 @@ if __name__ == "__main__":
     parser.add_argument('--k', action='store_true', help='Optional. Show keypoints index on the rendered image.')
     parser.add_argument('--x', action='store_true', help='Optional. Show x coordinates on the rendered image.')
     parser.add_argument('--w', type=str, required=False, help='Path containing the TF session files.',
-                        default='training_sessions/mirr_vs_no_mirr/mirr_bal_redux_norm/model')
+                        default='training_sessions/redux_vs_norm/redux_norm/model')
     parser.add_argument('--o', dest='stat_path', type=str, help='Output path of statistics.',
                         default='./runtime_stats')
 

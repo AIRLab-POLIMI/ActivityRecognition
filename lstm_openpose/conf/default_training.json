@@ -10,7 +10,6 @@
   "har_dataset_path": "activity_recognition/data",
   "balance_samples": false,
   "mirror_few_samples": false,
-  "minorities": 1,
 
 
   "video_path": "video_tag/video",

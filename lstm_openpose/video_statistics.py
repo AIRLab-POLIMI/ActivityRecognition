@@ -1,6 +1,7 @@
 import argparse
 import cv2
 import json
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import os
@@ -9,6 +10,7 @@ import time
 # import pose_estimation.build.human_pose_estimation_demo.python.chpe as chpe
 
 ROUND_DECIMALS = False
+ROUND_N_DECIMALS = 0
 
 START_MEASURING_FRAME = 300
 REPETITIONS = 20
@@ -95,20 +97,22 @@ def analyse_videos(args):
                 json.dump(model_statistics, f, indent=2)
 
 
-def load_statistics_data(video_path=None):
-    if video_path:
-        video_paths = [video_path]
-    else:
-        video_paths = [os.path.join(STATISTICS_FOLDER, folder) for folder in os.listdir(STATISTICS_FOLDER)
-                       if os.path.isdir(os.path.join(STATISTICS_FOLDER, folder))]
+def load_statistics_data(n_cols, np_root_path=None):
+    root_path = STATISTICS_FOLDER
+    if np_root_path:
+        root_path = np_root_path
 
-    stats = np.empty([0, 3])
+    print('root_path:', root_path)
+    sub_paths = [os.path.join(root_path, folder) for folder in os.listdir(root_path)
+                 if os.path.isdir(os.path.join(root_path, folder))]
 
-    for video_folder in video_paths:
+    print('sub_paths:', sub_paths)
+
+    stats = np.empty([0, n_cols])
+
+    for video_folder in sub_paths:
         np_files = [os.path.join(video_folder, np_dump) for np_dump in os.listdir(video_folder)
                     if (os.path.isfile(os.path.join(video_folder, np_dump)) and 'json' not in np_dump)]
-
-        # print('np_files:', np_files)
 
         for npf in np_files:
             stats = np.concatenate((stats, np.load(npf, allow_pickle=True)), axis=0)
@@ -116,8 +120,92 @@ def load_statistics_data(video_path=None):
     return stats
 
 
-def plot(args):
-    stats = load_statistics_data()
+def rt_plot(args):
+    stats = load_statistics_data(n_cols=6, np_root_path=args.metr_path)
+    min_people = int(stats[:, 0].min())
+    max_people = int(stats[:, 0].max())
+
+    data = {}
+    modules = ['HPE', 'Tracking', 'HAR']
+    for m in modules:
+        data[m] = []
+
+    y_scale = 1000
+
+    for n in range(min_people, 12):
+        hpe_time_for_n = stats[stats[:, 0] == n][:, 1]
+
+        tracking_time_for_n = stats[stats[:, 0] == n][:, 2]
+
+        # e2e_time_for_n = stats[stats[:, 0] == n][:, 5]
+        if ROUND_N_DECIMALS > 0:
+            hpe_time_for_n = np.around(hpe_time_for_n, decimals=ROUND_N_DECIMALS)
+            tracking_time_for_n = np.around(tracking_time_for_n, decimals=ROUND_N_DECIMALS)
+            # e2e_time_for_n = np.around(e2e_time_for_n, decimals=2)
+
+        data['HPE'].append(hpe_time_for_n * y_scale)
+        data['Tracking'].append(tracking_time_for_n * y_scale)
+        # data['End-to-end'].append(e2e_time_for_n * y_scale)
+
+    min_traces = int(stats[:, 4].min())
+    max_traces = int(stats[:, 4].max())
+
+    for n in range(min_traces, max_traces+1):
+        full_tr_for_n = stats[stats[:, 0] == n][:, 4]
+        har_time_for_n = stats[stats[:, 0] == n][:, 3]
+        har_time_for_n = har_time_for_n[full_tr_for_n > 0]
+        if ROUND_N_DECIMALS > 0:
+            har_time_for_n = np.around(har_time_for_n, decimals=ROUND_N_DECIMALS)
+
+        data['HAR'].append(har_time_for_n * y_scale)
+
+    font = {
+        'family': 'Bitstream Vera Sans',
+        'weight': 'bold',
+        'size': 14
+    }
+    matplotlib.rc('font', **font)
+
+    rt_fig, axes = plt.subplots(ncols=len(data), sharey='all', figsize=(14, 6))
+    # rt_fig, axes = plt.subplots(ncols=len(data), sharey='all')
+    rt_fig.subplots_adjust(wspace=0)
+
+    flierprops = {
+        'HPE': dict(markeredgecolor='xkcd:light orange'),
+        'Tracking': dict(markeredgecolor='g'),
+        'HAR': dict(markeredgecolor='b')
+        }
+
+    medianprops = {
+        'HPE': dict(color='xkcd:light orange'),
+        'Tracking': dict(color='g'),
+        'HAR': dict(color='b')
+    }
+
+    for ax, name in zip(axes, modules):
+        ax.boxplot(data[name], showfliers=False, medianprops=medianprops[name], flierprops=flierprops[name])
+        ax.margins(0.05)
+        if name == 'HAR':
+            ax.set_xlabel('Num. of full traces. [-] \n'+name)
+        else:
+            ax.set_xlabel('Num. of detects. [-] \n' + name)
+
+        # ax.set_ylabel("Operation time [ms]")
+
+    axes[0].set_ylabel("Operation time [ms]")
+
+    if not os.path.exists(args.plot_path):
+        os.makedirs(args.plot_path)
+
+    # plt.show()
+    if args.plot_path:
+        plt.savefig(os.path.join(args.plot_path, 'runtime_plot.png'), dpi=300, bbox_inches='tight')
+
+    plt.close(rt_fig)
+
+
+def hpe_plot(args):
+    stats = load_statistics_data(n_cols=3)
     min_people = int(stats[:, 0].min())
     max_people = int(stats[:, 0].max())
 
@@ -173,9 +261,16 @@ if __name__ == "__main__":
     parser_analyse.add_argument('-v', dest='video_paths', type=str, nargs='*', help='List of path to videos to analyse.')
     parser_analyse.set_defaults(func=analyse_videos)
 
-    parser_plot = subpars.add_parser('plot', help='Produce plots of the analysed videos.')
+    parser_plot = subpars.add_parser('hpe-plot', help='Produce plots of the analysed videos.')
     parser_plot.add_argument('-o', dest='plot_path', type=str, help='Output path of plots.')
-    parser_plot.set_defaults(func=plot)
+    parser_plot.set_defaults(func=hpe_plot)
+
+    parser_rt = subpars.add_parser('runtime-plot', help='Produce plots of runtime statistics.')
+    parser_rt.add_argument('-i',  dest='metr_path', type=str, help='Input path of numpy arrays of metrics.',
+                           default='./runtime_stats')
+    parser_rt.add_argument('-o',  dest='plot_path', type=str, help='Output path of plots.',
+                           default='./runtime_performances/har')
+    parser_rt.set_defaults(func=rt_plot)
 
     args = parser.parse_args()
     args.func(args)

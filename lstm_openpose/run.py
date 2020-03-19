@@ -3,13 +3,18 @@ import collections
 import json
 import numpy as np
 import os
-import lstm_openpose.pose_estimation.build.human_pose_estimation_demo.python.chpe as chpe
+import pose_estimation.build.human_pose_estimation_demo.python.chpe as chpe
 import tensorflow as tf
 import time
 
 from functools import partial
-from lstm_openpose.training import lstm_rnn, MAX_HEIGHT, MAX_WIDTH, MODEL_DIR, \
-                                    MODEL_NAME, MODEL_FILE_NAME, load_class_map, CLASS_MAP_FILE
+from training import lstm_rnn, MAX_HEIGHT, MAX_WIDTH, \
+                     MODEL_DIR, MODEL_NAME, MODEL_FILE_NAME, \
+                     load_class_map, CLASS_MAP_FILE
+
+# -------------------------------
+# -------- CODE START -----------
+# -------------------------------
 
 keypoints_number = 18
 TIME_SERIES_LEN = 32
@@ -322,6 +327,37 @@ def print_poses(poses):
                   '{:.2f}'.format(pose.keypoints[i].score))
         n += 1
         print('-----------------------------------')
+
+
+# Taken from https://github.com/Daniil-Osokin/lightweight-human-pose-estimation.pytorch
+# TODO: check if it is needed
+def convert_to_coco_format(pose_entries, all_keypoints):
+    coco_keypoints = []
+    scores = []
+    for n in range(len(pose_entries)):
+        if len(pose_entries[n]) == 0:
+            continue
+        keypoints = [0] * 17 * 3
+        to_coco_map = [0, -1, 6, 8, 10, 5, 7, 9, 12, 14, 16, 11, 13, 15, 2, 1, 4, 3]
+        person_score = pose_entries[n][-2]
+        position_id = -1
+        for keypoint_id in pose_entries[n][:-2]:
+            position_id += 1
+            if position_id == 1:  # no 'neck' in COCO
+                continue
+
+            cx, cy, score, visibility = 0, 0, 0, 0  # keypoint not found
+            if keypoint_id != -1:
+                cx, cy, score = all_keypoints[int(keypoint_id), 0:3]
+                cx = cx + 0.5
+                cy = cy + 0.5
+                visibility = 1
+            keypoints[to_coco_map[position_id] * 3 + 0] = cx
+            keypoints[to_coco_map[position_id] * 3 + 1] = cy
+            keypoints[to_coco_map[position_id] * 3 + 2] = visibility
+        coco_keypoints.append(keypoints)
+        scores.append(person_score * max(0, (pose_entries[n][-1] - 1)))  # -1 for 'neck'
+    return coco_keypoints, scores
 
 
 def track_via_spatial_consist(bbox_cur_frame, bbox_list_prev_frame):

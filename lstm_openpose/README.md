@@ -57,22 +57,14 @@ This phase can be configured with a JSON file under 'conf/' and launched with th
 ```
 python training.py train -h
 
-usage: training.py [-h] {stat,pre-process,train,multiple-training} ...
-
-HPE-to-HAR for robots - RNN training utility
-
-positional arguments:
-  {stat,pre-process,train,multiple-training}
-                        Commands to pre-process or train the RNN
-    stat                Plot statistics about the pre-processed data set.
-    pre-process         Pre-process data: prepare CVAT dumps and then extract
-                        poses using OpenPose-based HPE module.
-    train               Train the RNN using pre-processed data.
-    multiple-training   Launch multiple training sessions of the HAR RNNusing
-                        different configurations.
+usage: training.py train [-h] [-conf CONFIG_PATH] [-files [FILES [FILES ...]]]
+                         [-sessiononly]
 
 optional arguments:
   -h, --help            show this help message and exit
+  -conf CONFIG_PATH     Path to configuration file for training.
+  -files [FILES [FILES ...]]
+                        List of file names (in CVAT dumps path) to train.
 ```
 
 ### Run real-time HAR on camera using OpenVINO HPE

@@ -619,6 +619,8 @@ def compute_new_class_map(class_map, reductions):
     all_keys = [k for k in class_map.keys() if k not in sort_red_keys]
     all_keys.extend(sort_red_keys)
 
+
+    # print('new_class_map:', new_class_map)
     return new_class_map, id_transl
 
 

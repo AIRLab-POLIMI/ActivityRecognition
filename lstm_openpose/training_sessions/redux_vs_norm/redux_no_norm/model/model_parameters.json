@@ -1,23 +1,24 @@
 {
   "store_model": true,
-  "cvat_dumps_path": "video_tag/cvat_annotations",
-  "model_output": "training_sessions/redux_vs_norm/redux_no_norm/model",
-  "minorities": 1,
-  "mirror_few_samples": false,
-  "normalise_poses": false,
   "har_dataset_path": "activity_recognition/data",
+  "mirror_few_samples": false,
   "video_path": "video_tag/video",
+  "normalise_poses": false,
+  "reductions": {
+    "standing_phone_talking": "standing_phone_talking",
+    "sitting": "sitting",
+    "standing": "standing",
+    "walking_slow": "walking",
+    "window_shopping": "standing",
+    "sitting_phone_talking": "sitting_phone_talking",
+    "walking_cart": "walking",
+    "walking_phone": "walking",
+    "walking_fast": "walking",
+    "wandering": "walking"
+  },
   "epochs": 400,
   "tags_path": "video_tag/cvat_annotations_sorted",
   "balance_samples": false,
-  "reductions": {
-    "walking_fast": "walking",
-    "window_shopping": "standing",
-    "wandering": "walking",
-    "walking_phone": "walking",
-    "standing_free": "standing",
-    "walking_caddy": "walking",
-    "standing_busy": "standing_phone_talking",
-    "walking_slow": "walking"
-  }
+  "model_output": "training_sessions/redux_vs_norm/redux_no_norm/model",
+  "cvat_dumps_path": "video_tag/cvat_annotations"
 }

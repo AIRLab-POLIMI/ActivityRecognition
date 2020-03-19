@@ -28,6 +28,7 @@ namespace human_pose_estimation {
       cv::Mat sub_image = this->image;
       cv::Point2d relative_origin(0,0);
       if (limit_bbox) {
+        // TODO: here limit the image
         cv::Point2d TL(bbox.xtl, bbox.ytl);
         relative_origin = TL;
         cv::Point2d BR(bbox.xbr, bbox.ybr);

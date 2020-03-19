@@ -1,10 +1,10 @@
 {
-  "recall": "0.5910290237467019",
   "training_samples": "1513",
-  "final_accuracy": "0.59102905",
-  "f1_score": "0.5900304439457701",
-  "precision": "0.5996042856256599",
   "test_data_count": "379",
-  "training_time_seconds": "1037.5961999893188",
-  "final_loss": "2.0114527"
+  "training_time_seconds": "1007.6308789253235",
+  "recall": "0.6253298153034301",
+  "precision": "0.6184625434700203",
+  "final_accuracy": "0.6253298",
+  "f1_score": "0.6178850071023027",
+  "final_loss": "1.9503596"
 }

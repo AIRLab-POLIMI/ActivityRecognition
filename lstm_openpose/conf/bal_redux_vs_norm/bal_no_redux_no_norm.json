@@ -2,8 +2,6 @@
   "epochs": 4000,
   "normalise_poses": false,
   "reductions": {
-    "standing_busy": "standing_phone_talking",
-    "walking_caddy": "walking_cart"
   },
   "store_model": true,
   "model_output": "training_sessions/mirr_vs_no_mirr/bal_no_redux_no_norm/model",

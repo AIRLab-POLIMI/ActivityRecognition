@@ -15,5 +15,4 @@ conf/redux_vs_norm/redux_norm.json \
 conf/mirr_no_bal/mirr_6redux_norm.json \
 conf/mirr_no_bal/mirr_7redux_norm.json \
 conf/mirr_on_no_red/mirr_no_redux.json \
-conf/mirr_on_no_red/2_mirr_no_redux.json \
 conf/mirr_on_no_red/no_mirr_no_redux.json
